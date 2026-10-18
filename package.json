@@ -1,0 +1,12 @@
+{
+  "name": "handler-count-dashboard",
+  "version": "1.0.0",
+  "description": "Weekly and Monthly Performance Report Dashboard with Twitter integration",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@the-convocation/twitter-scraper": "^0.22.3"
+  }
+}

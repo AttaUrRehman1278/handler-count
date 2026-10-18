@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekly & Monthly Performance Report Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Local JSZip & Template Base64 Data (Works 100% offline without CORS issues) -->
+    <script src="jszip.min.js"></script>
+    <script src="templates_data.js"></script>
+</head>
+<body>
+
+    <header class="app-header">
+        <h1>Performance Report Dashboard</h1>
+        <p class="subtitle">Enter your accounts, metrics, achievements, and screenshots to generate exact copies of your weekly & monthly PowerPoint reports.</p>
+    </header>
+
+    <!-- ── Report Metadata ── -->
+    <section class="card report-meta">
+        <h2>Report Information</h2>
+        <div class="meta-grid">
+            <label>
+                <span>Project Name:</span>
+                <input type="text" id="projectName" value="Europe" placeholder="e.g. Europe or Malaysia">
+            </label>
+            <label>
+                <span>Project Location:</span>
+                <input type="text" id="projectLocation" value="Serbia" placeholder="e.g. Serbia">
+            </label>
+            <label>
+                <span>Weekly Report Date / Month:</span>
+                <input type="text" id="reportDate" value="Oct 13" placeholder="e.g. Oct 13">
+            </label>
+            <label>
+                <span>Monthly Report Month:</span>
+                <input type="text" id="reportMonth" value="أكتوبر" placeholder="e.g. أكتوبر or October">
+            </label>
+            <label>
+                <span>Monthly Report Year:</span>
+                <input type="text" id="reportYear" value="2026" placeholder="e.g. 2026">
+            </label>
+        </div>
+    </section>
+
+    <!-- ── Summary Cards ── -->
+    <section class="summary" aria-label="Overall performance summary">
+        <div class="summary-card">
+            <h3>Total Accounts</h3>
+            <p id="totalAccounts">0</p>
+        </div>
+        <div class="summary-card">
+            <h3>Total Posts</h3>
+            <p id="totalPosts">0</p>
+        </div>
+        <div class="summary-card">
+            <h3>Total Reach</h3>
+            <p id="totalReachValue">0</p>
+        </div>
+        <div class="summary-card">
+            <h3>Total Likes</h3>
+            <p id="totalLikes">0</p>
+        </div>
+        <div class="summary-card">
+            <h3>Total Friends</h3>
+            <p id="totalFriends">0</p>
+        </div>
+        <div class="summary-card">
+            <h3>Total Comments</h3>
+            <p id="totalComments">0</p>
+        </div>
+        <div class="summary-card">
+            <h3>Total Video Views</h3>
+            <p id="totalVideoViews">0</p>
+        </div>
+        <div class="summary-card">
+            <h3>Total Groups Joined</h3>
+            <p id="totalGroups">0</p>
+        </div>
+        <div class="summary-card">
+            <h3>Total Initial Followers</h3>
+            <p id="totalInitialFollowers">0</p>
+        </div>
+        <div class="summary-card">
+            <h3>Total Current Followers</h3>
+            <p id="totalCurrentFollowers">0</p>
+        </div>
+    </section>
+
+    <!-- ── Twitter / X Automated Fetcher ── -->
+    <section id="twitterFetcherSection" class="card twitter-fetcher-card">
+        <div class="section-header">
+            <div class="fetcher-title-area">
+                <h2>⚡ Twitter / X Auto-Fetcher</h2>
+                <span id="serverStatusBadge" class="status-badge status-offline">● Checking Server...</span>
+            </div>
+            <button type="button" id="openSettingsBtn" class="btn-secondary btn-sm">⚙️ Session Settings</button>
+        </div>
+
+        <p class="section-note">
+            Paste one or multiple Twitter/X profile links below. The dashboard will automatically fetch each account's followers, name, and recent post data (reach, likes, comments, views) for your chosen period.
+        </p>
+
+        <div class="fetcher-controls">
+            <div class="period-toggle">
+                <span class="control-label">Report Period:</span>
+                <div class="toggle-buttons">
+                    <button type="button" id="toggleWeeklyBtn" class="btn-toggle active" data-period="weekly">📊 Weekly (Last 7 Days)</button>
+                    <button type="button" id="toggleMonthlyBtn" class="btn-toggle" data-period="monthly">📅 Monthly (Last 30 Days)</button>
+                </div>
+            </div>
+
+            <div class="fetch-options">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="fetchPostsCheckbox" checked>
+                    <span>Fetch individual posts data (views, likes, comments)</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="urls-input-area">
+            <label for="twitterUrlsInput" class="control-label">Twitter / X Profile Links (one per line):</label>
+            <textarea id="twitterUrlsInput" rows="4" placeholder="https://x.com/ivanristic5b9q&#10;https://x.com/Tijanalazic09&#10;https://x.com/JovanLukacf"></textarea>
+        </div>
+
+        <div class="fetcher-actions">
+            <button type="button" id="startFetchBtn" class="btn-primary btn-fetch">
+                ⚡ Fetch & Populate Accounts
+            </button>
+            <button type="button" id="clearUrlsBtn" class="btn-secondary">Clear Links</button>
+            <span id="fetchProgressText" class="progress-text"></span>
+        </div>
+
+        <div id="serverAlert" class="alert-box alert-warning" style="display: none;">
+            <strong>Backend Connection:</strong> If running locally, run <code>npm start</code> to start the local server. If deployed on Vercel, check that serverless functions are active.
+        </div>
+    </section>
+
+    <!-- ── Twitter Settings Modal ── -->
+    <div id="settingsModal" class="modal-overlay" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Twitter / X Session Settings</h3>
+                <button type="button" id="closeSettingsBtn" class="btn-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-desc">
+                    Twitter restricts public tweet viewing without an active session. By providing your session cookies from <strong>x.com</strong>, the local server can seamlessly fetch full post reach, likes, and reply metrics.
+                </p>
+
+                <div class="cookie-help-steps">
+                    <strong>How to get your cookies in 15 seconds:</strong>
+                    <ol>
+                        <li>Open <a href="https://x.com" target="_blank" rel="noopener">x.com</a> in your browser and log in.</li>
+                        <li>Press <kbd>F12</kbd> (DevTools) &gt; Go to <strong>Application</strong> tab &gt; <strong>Cookies</strong> &gt; <code>https://x.com</code>.</li>
+                        <li>Copy the value of <code>auth_token</code> and <code>ct0</code> and paste them below:</li>
+                    </ol>
+                </div>
+
+                <div class="input-group">
+                    <label>
+                        <span>auth_token:</span>
+                        <input type="text" id="settingAuthToken" placeholder="e.g. 4a8b7c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b">
+                    </label>
+                </div>
+
+                <div class="input-group">
+                    <label>
+                        <span>ct0:</span>
+                        <input type="text" id="settingCt0" placeholder="e.g. 1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d">
+                    </label>
+                </div>
+
+                <div id="settingsSaveStatus" class="save-status"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="saveSettingsBtn" class="btn-primary">Save Session Cookies</button>
+                <button type="button" id="cancelSettingsBtn" class="btn-secondary">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Account Management ── -->
+    <section id="accountSection" class="card">
+        <div class="section-header">
+            <h2>Accounts & Posts</h2>
+            <button type="button" id="addAccountBtn" class="btn-primary">
+                + Add Account
+            </button>
+        </div>
+
+        <div id="accountsContainer">
+            <!-- Account cards will be added here dynamically -->
+        </div>
+    </section>
+
+    <!-- ── Screenshots Section ── -->
+    <section id="screenshotsSection" class="card">
+        <div class="section-header">
+            <h2>Screenshots of Achievement</h2>
+            <span class="badge">Included in Slide 5 (Weekly) & Slides 4-5 (Monthly)</span>
+        </div>
+        <p class="section-note">
+            Upload images or paste directly from your clipboard (<kbd>Ctrl+V</kbd>). They will be automatically embedded into the Screenshots slides in your PowerPoint presentation.
+        </p>
+
+        <div id="dropzone" class="dropzone">
+            <input type="file" id="screenshotInput" accept="image/*" multiple hidden>
+            <div class="dropzone-content">
+                <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#2457a7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                </svg>
+                <p>Drag & drop screenshot images here, or <button type="button" id="browseScreenshotsBtn" class="link-btn">browse files</button></p>
+                <small>Tip: You can also copy any screenshot and press <strong>Ctrl+V</strong> to paste it instantly!</small>
+            </div>
+        </div>
+
+        <div id="screenshotsGrid" class="screenshots-grid">
+            <!-- Screenshot thumbnail items will appear here -->
+        </div>
+    </section>
+
+    <!-- ── Achievement Highlights Section ── -->
+    <section id="highlightsSection" class="card">
+        <div class="section-header">
+            <h2>Report Achievements & Highlights</h2>
+        </div>
+        <p class="section-note">
+            Add key achievement narratives, post summaries, and developments. These populate Slide 6 of the Weekly Report and Slide 3 of the Monthly Report.
+        </p>
+
+        <!-- Weekly Highlights Box -->
+        <div class="highlight-group">
+            <div class="group-header">
+                <h3>Weekly Achievements (Slide 6)</h3>
+                <button type="button" id="addWeeklyHighlightBtn" class="btn-secondary">+ Add Weekly Achievement</button>
+            </div>
+            <div id="weeklyHighlightsContainer" class="highlights-list">
+                <!-- Weekly items -->
+            </div>
+        </div>
+
+        <hr class="divider">
+
+        <!-- Monthly Highlights Box -->
+        <div class="highlight-group">
+            <div class="group-header">
+                <h3>Monthly Report Sections (Slide 3)</h3>
+            </div>
+
+            <div class="monthly-subsections">
+                <!-- 1: Achievements -->
+                <div class="subsection-box">
+                    <div class="group-header">
+                        <h4>1. الإنجازات (Achievements / Post Highlights)</h4>
+                        <button type="button" id="addMonthlyAchieveBtn" class="btn-secondary btn-sm">+ Add Item</button>
+                    </div>
+                    <div id="monthlyAchieveContainer" class="highlights-list"></div>
+                </div>
+
+                <!-- 2: Developments -->
+                <div class="subsection-box">
+                    <div class="group-header">
+                        <h4>2. آخر التطورات (Latest Developments)</h4>
+                        <button type="button" id="addMonthlyDevBtn" class="btn-secondary btn-sm">+ Add Item</button>
+                    </div>
+                    <div id="monthlyDevContainer" class="highlights-list"></div>
+                </div>
+
+                <!-- 3: Key Events -->
+                <div class="subsection-box">
+                    <div class="group-header">
+                        <h4>3. أبرز الأحداث التي تم تغطيتها (Key Events Covered)</h4>
+                        <button type="button" id="addMonthlyEventsBtn" class="btn-secondary btn-sm">+ Add Item</button>
+                    </div>
+                    <div id="monthlyEventsContainer" class="highlights-list"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── Download Section ── -->
+    <section class="card download-card">
+        <h2>Download PowerPoint Reports</h2>
+        <p class="section-note">Downloaded presentations use the exact template slides, layout, themes, and Arabic/English formatting from your original files. All text and numbers remain 100% editable in PowerPoint.</p>
+        <div class="download-buttons">
+            <button type="button" id="downloadWeeklyPptxBtn" class="btn-download btn-weekly">
+                <span class="icon">📊</span>
+                <span class="text">
+                    <strong>Download Weekly Report (PPTX)</strong>
+                    <small>Exact copy of Weekly template with your data & screenshots</small>
+                </span>
+            </button>
+
+            <button type="button" id="downloadMonthlyPptxBtn" class="btn-download btn-monthly">
+                <span class="icon">📅</span>
+                <span class="text">
+                    <strong>Download Monthly Report (PPTX)</strong>
+                    <small>Exact copy of Monthly Arabic template with your data & screenshots</small>
+                </span>
+            </button>
+        </div>
+    </section>
+
+    <script src="script.js"></script>
+</body>
+</html>

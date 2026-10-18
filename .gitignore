@@ -1,0 +1,7 @@
+node_modules
+.vercel
+twitter_cookies.json
+.DS_Store
+*.log
+
+.vercel
